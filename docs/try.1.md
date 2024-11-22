@@ -1,4 +1,4 @@
-% TRY(1) try 0.1.0 | Do, or do not. There is no *try*.
+% TRY(1) try 0.2.0 | Do, or do not. There is no *try*.
 % The PaSh Authors
 
 # NAME
@@ -6,7 +6,7 @@
 try - run a command in an overlay
 
 # SYNOPSIS
-| try [-ny] [-i PATTERN] [-D DIR] [-U PATH] CMD [ARG ...]
+| try [-ny] [-i PATTERN] [-D DIR] [-U PATH] [-L LOWER_DIRS] CMD [ARG ...]
 | try summary [DIR]
 | try commit [DIR]
 | try explore
@@ -23,19 +23,23 @@ While using *try* you can choose to commit the result to the filesystem or compl
 
 -n
 
-: Don't prompt for commit. Just return the overlay directory.
+: Don't commit or prompt for commit. Just return the overlay directory. Overrides -y.
 
 -y
 
-: Assume yes to all prompts (implies -n is not used)
+: Assume yes to all prompts. Overrides -n.
 
 -v
 
-: Show version information (and exit)
+: Show version information (and exit).
 
 -h
 
-: Show a usage message (and exit)
+: Show a usage message (and exit).
+
+-x
+
+: Prevent network access (by unsharing the network namespace).
 
 
 ## Options
@@ -53,43 +57,48 @@ While using *try* you can choose to commit the result to the filesystem or compl
 : Use the unionfs helper implementation defined in the *PATH* (e.g., mergerfs, unionfs-fuse) instead of the default.
 This option is recommended in case OverlayFS fails.
 
+-L *LOWER_DIRS*
+
+: Specify a colon-separated list of directories to be used as lower directories for the overlay, formatted as "dir1:dir2:...:dirn" (implies -n).
+
+
 ## Subcommands
 
 try summary *DIR*
 
-: Show the summary for the overlay in *DIR*
+: Show the summary for the overlay in *DIR*.
 
 try commit *DIR*
 
-: Commit the overlay in *DIR*
+: Commit the overlay in *DIR*.
 
 try explore
 
-: Run in interactive mode
+: Run in interactive mode, i.e., start a shell in the overlay.
 
 ## Arguments
 
 *CMD*
 
-: Specifies the command to execute inside the overlay
+: Specifies the command to execute inside the overlay.
 
 *ARG*
 
-: The arguments of *CMD*
+: The arguments of *CMD*.
 
 # EXIT STATUS
 
 0
 
-: Command ran successfully
+: Command ran successfully.
 
 1
 
-: Consistency error/failure
+: Consistency error/failure.
 
 2
 
-: Input error
+: Input or other internal error.
 
 # EXAMPLES
 
@@ -124,6 +133,12 @@ Alternatively, you can specify your own overlay directory as follows (note that 
 try -D try_dir gunzip file.txt.gz
 ```
 
+To use multiple lower directories for overlay (by merging them), you can use the `-L` flag followed by a colon-separated list of directories. The directories on the left have higher precedence and can overwrite the directories on the right:
+
+```
+try -L /lowerdir1:/lowerdir2:/lowerdir3 gunzip file.txt.gz
+```
+
 You can inspect the changes made inside a given overlay directory:
 
 ```
@@ -138,8 +153,7 @@ try commit try_dir
 
 # SEE ALSO
 
-chroot(1), unshare(1)
-Alternative tool [checkinstall](http://checkinstall.izto.org/) (unmaintained)
+checkinstall(1), chroot(1), unshare(1), mount_namespaces(7), namespaces(7), mount(8)
 
 # BUGS
 
