@@ -56,7 +56,7 @@ trailing_whitespace() {
     # empty file is fine
     [ -s "$file" ] || return
 
-    if grep -lq -e '[[:blank:]]$' "$file"
+    if grep -I -lq -e '[[:blank:]]$' "$file"
     then
         warn "$file: trailing whitespace (tabs shown as underscores)"
         grep --line-number -e '[[:blank:]]$' "$file" | sed 's/[[:blank:]]\+$/\o33[41m&\o033[0m/' | tr "$(printf '\t')" '____'
@@ -71,16 +71,18 @@ tabs() {
     file="$1"
 
     # it's supposed to be there!
-    [ "$(basename "$file")" = "Makefile" ] && return
+    case "$file" in
+        (*Makefile*) return;;
+    esac
 
-    [ -f "$file" ] || warn "trailing_whitespace: '$file' is not a normal file"
+    [ -f "$file" ] || warn "tabs: '$file' is not a normal file"
 
     # empty file is fine
     [ -s "$file" ] || return
 
     # so it doesn't literally appear here, lol
     tab="$(printf '\t')"
-    if grep -lq -e "$tab" "$file"
+    if grep -I -lq -e "$tab" "$file"
     then
         warn "$file: tabs (shown as underscores here)"
         grep --line-number -e "$tab" "$file" | sed 's/\t/\o33[41m____\o033[0m/'
@@ -93,7 +95,7 @@ tabs() {
 
 if [ "$#" -eq 0 ]
 then
-    FILES=$(find . -type f -a \( \! -path "./.git/*" \) -a \( \! -path "./.vagrant/*" \) -a \! \( -name "*.png" -o -name "*.gif" -o -name "*.gz" \))
+    FILES=$(find . -type f -a \( \! -path "./.git/*" \) -a \( \! -path "./.vagrant/*" \) -a \( \! -path "./autom4te.cache/*" \) -a \( \! -name install-sh \) -a \( \! -name "config*" \) -a \( \! -name "*~" \) -a \! \( -name "*.png" -o -name "*.gif" -o -name "*.gz" \))
 else
     # shellcheck disable=SC2124
     FILES="$@"
@@ -129,7 +131,7 @@ done
 
 if [ "$NUM_WARNINGS" -eq 0 ]
 then
-    printf "✓ \033[32;1mLINT CHECK PASSED\033[0m\n"
+    printf "\033[32;1m✓ LINT CHECK PASSED\033[0m\n"
 else
     printf "\n❌ \033[31;1mLINT CHECK FAILED (%d warning%s)\033[0m\n" "$NUM_WARNINGS" "$(plural "$NUM_WARNINGS")"
     exit 1

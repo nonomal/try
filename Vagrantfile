@@ -7,26 +7,41 @@ Vagrant.configure("2") do |config|
 
   # Regular debian testing box
   config.vm.define "debian" do |debian|
-    debian.vm.box = "debian/testing64"
+    debian.vm.box = "generic/debian12"
     debian.vm.provision "file", source: "./", destination: "/home/vagrant/try"
     debian.vm.provision "shell", privileged: false, inline: "
-      sudo apt update
-      sudo apt install -y git expect
+      sudo apt-get update
+      sudo apt-get install -y git expect curl attr pandoc gcc make autoconf mergerfs
       sudo chown -R vagrant:vagrant try
       cd try
-      bash test/run_tests.sh
+      scripts/run_tests.sh
+
+      autoconf && ./configure && make
+      sudo make install
+      which try-commit || exit 2
+
+      scripts/run_tests.sh
     "
   end
 
   # Regular debian testing box but we try the rustup oneliner
   config.vm.define "debianrustup" do |debianrustup|
-    debianrustup.vm.box = "debian/testing64"
+    debianrustup.vm.box = "generic/debian12"
     debianrustup.vm.provision "file", source: "./", destination: "/home/vagrant/try"
     debianrustup.vm.provision "shell", privileged: false, inline: "
-      sudo apt update
-      sudo apt install -y curl
+      sudo apt-get update
+      sudo apt-get install -y curl attr pandoc gcc make autoconf mergerfs
       sudo chown -R vagrant:vagrant try
       cd try
+      mkdir rustup
+      ./try -D rustup \"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y\"
+      ls -lah rustup/upperdir/home/vagrant/.cargo/bin
+
+      rm -rf rustup
+      autoconf && ./configure && make
+      sudo make install
+      which try-commit || exit 2
+
       mkdir rustup
       ./try -D rustup \"curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y\"
       ls -lah rustup/upperdir/home/vagrant/.cargo/bin
@@ -35,11 +50,11 @@ Vagrant.configure("2") do |config|
 
   # Regular debian testing box with LVM
   config.vm.define "debianlvm" do |debianlvm|
-    debianlvm.vm.box = "debian/testing64"
+    debianlvm.vm.box = "generic/debian12"
     debianlvm.vm.provision "file", source: "./", destination: "/home/vagrant/try"
     debianlvm.vm.provision "shell", privileged: false, inline: "
-      sudo apt update
-      sudo apt install -y git expect lvm2 mergerfs
+      sudo apt-get update
+      sudo apt-get install -y git expect lvm2 mergerfs curl attr pandoc gcc make autoconf mergerfs
 
       # Create an image for the lvm disk
       sudo fallocate -l 2G /root/lvm_disk.img
@@ -65,7 +80,13 @@ Vagrant.configure("2") do |config|
       sudo chown -R vagrant:vagrant /mnt/lv0/try
 
       cd /mnt/lv0/try
-      bash test/run_tests.sh
+      scripts/run_tests.sh
+
+      autoconf && ./configure && make
+      sudo make install
+      which try-commit || exit 2
+
+      scripts/run_tests.sh
     "
   end
 
@@ -74,22 +95,34 @@ Vagrant.configure("2") do |config|
     rocky.vm.box = "generic/rocky9"
     rocky.vm.provision "file", source: "./", destination: "/home/vagrant/try"
     rocky.vm.provision "shell", privileged: false, inline: "
-      sudo yum install -y git expect
+      sudo yum install -y git expect curl attr pandoc fuse
+      wget https://github.com/trapexit/mergerfs/releases/download/2.40.2/mergerfs-2.40.2-1.el9.x86_64.rpm
+      sudo rpm -i mergerfs-2.40.2-1.el9.x86_64.rpm
       sudo chown -R vagrant:vagrant try
       cd try
-      TRY_TOP=$(pwd) bash test/run_tests.sh
+      TRY_TOP=$(pwd) scripts/run_tests.sh
+      autoconf && ./configure && make
+      sudo make install
+      which try-commit || exit 2
+      TRY_TOP=$(pwd) scripts/run_tests.sh
     "
   end
   #
   # Regular rocky testing box
-  config.vm.define "fedora33" do |fedora|
-    fedora.vm.box = "generic/fedora33"
+  config.vm.define "fedora39" do |fedora|
+    fedora.vm.box = "generic/fedora39"
     fedora.vm.provision "file", source: "./", destination: "/home/vagrant/try"
     fedora.vm.provision "shell", privileged: false, inline: "
-      sudo yum install -y git expect
+      sudo yum install -y git expect curl attr pandoc fuse
+      wget https://github.com/trapexit/mergerfs/releases/download/2.40.2/mergerfs-2.40.2-1.fc39.x86_64.rpm
+      sudo rpm -i mergerfs-2.40.2-1.fc39.x86_64.rpm
       sudo chown -R vagrant:vagrant try
       cd try
-      TRY_TOP=$(pwd) bash test/run_tests.sh
+      TRY_TOP=$(pwd) scripts/run_tests.sh
+      autoconf && ./configure && make
+      sudo make install
+      which try-commit || exit 2
+      TRY_TOP=$(pwd) scripts/run_tests.sh
     "
   end
 end
